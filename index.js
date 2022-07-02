@@ -4,13 +4,14 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import UserModel from './models/User.js';
+import CardModel from './models/Card.js';
 
 const app = express();
 
 app.use(express.json());
 
 mongoose
-  .connect('mongodb://localhost:27017/')
+  .connect('mongodb://localhost:27017/flowerShop')
   .then(() => console.log('YEAH'))
   .catch(() => console.log('fuck i got error'));
 
@@ -84,6 +85,67 @@ app.post('/login', async (req, res) => {
     res.json({ ...user._doc, token }); //return user.doc info and jwt token
   } catch (error) {
     res.status(500).json('Не удалось авторизоваться');
+  }
+});
+
+app.post('/addcard', async (req, res) => {
+  try {
+    const doc = new CardModel({
+      title: req.body.title,
+      imageUrl: req.body.imageUrl,
+      price: req.body.price,
+      type: req.body.type,
+      filter: req.body.filter,
+    });
+    const card = await doc.save();
+    res.json(card);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: 'Не удалось создать товар',
+    });
+  }
+});
+
+app.get('/getAll', async (req, res) => {
+  try {
+    const posts = await CardModel.find().exec(); // search post with relationship "user"
+    res.json(posts);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: 'Не удалось получить статьи',
+    });
+  }
+});
+
+app.get('/getOne/:id', async (req, res) => {
+  try {
+    const postId = req.params.id; //get ID paramets
+
+    CardModel.findOne(
+      {
+        _id: postId,
+      },
+      (err, doc) => {
+        if (err) {
+          return res.status(500).json({
+            message: 'Не удалось получить статью',
+          });
+        }
+        if (!doc) {
+          return res.status(404).json({
+            message: 'Статья не найдена',
+          });
+        }
+        res.json(doc);
+      },
+    );
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: 'Не удалось получить статьи',
+    });
   }
 });
 
